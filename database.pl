@@ -9,12 +9,16 @@
 connect_to_database :-
     odbc_connect(library, _, [alias(library)]).
 
+% insert_books(+Books) is semidet.
+%
+%   Inserts a list of books into the database.
 insert_books(Books) :-
     odbc_prepare(
 	    library,
 	    'INSERT INTO books (title, author, isbn) VALUES (?, ?, ?)',
 	    [varchar, varchar, varchar],
-	    Statement),
+	    Statement,
+	    [null('')]),
     maplist(insert_book(Statement), Books).
 
 insert_book(Statement, book(Title, Author, ISBN)) :-
