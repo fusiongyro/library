@@ -1,13 +1,17 @@
-CREATE TABLE books (
-  id   	     VARCHAR  NOT NULL PRIMARY KEY,
-  title      VARCHAR, NOT NULL,
-  author     VARCHAR,
-  isbn 	     isbn     NOT NULL UNIQUE,
-  ddc 	     VARCHAR  NOT NULL,
-  image      BYTEA    NOT NULL,
-);
+CREATE EXTENSION isn;
 
-COMMENT ON TABLE books IS 'Represents the actual books in the library';
+-- This is used to form the default IDs. However, the user is free to
+-- override them with better values.
+CREATE SEQUENCE book_id_seq;
+
+CREATE TABLE books (
+  id   	     VARCHAR  PRIMARY KEY  DEFAULT nextval('book_id_seq')::varchar,
+  title      VARCHAR  NOT NULL,
+  author     VARCHAR,
+  isbn 	     isbn     UNIQUE,
+  ddc 	     VARCHAR,
+  image      BYTEA
+);
 
 CREATE TABLE borrowers (
   book_id      VARCHAR NOT NULL REFERENCES books ON UPDATE CASCADE ON DELETE CASCADE,
@@ -16,7 +20,7 @@ CREATE TABLE borrowers (
   phone        VARCHAR,
   borrowed_on  TIMESTAMP NOT NULL,
   returned_on  TIMESTAMP,
-  CONSTRAINT borrowers_pk PRIMARY KEY (book_id, borrowed_on)
+  CONSTRAINT borrowers_pk PRIMARY KEY (book_id, borrowed_on),
   CONSTRAINT need_borrower_contact_method CHECK(COALESCE(email, phone) IS NOT NULL)
 );
 

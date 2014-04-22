@@ -1,4 +1,5 @@
 
+
 CREATE TABLE books (
                 id VARCHAR NOT NULL,
                 title VARCHAR NOT NULL,
