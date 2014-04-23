@@ -23,7 +23,7 @@ remove_whitespace([T|Ts], Rest) :-
 %   Unifies WordTokens with a list of words from Title.
 word_tokens(Word, Tokens) :-
     atom(Word),
-    atom_codes(Word, WordCodes),
+    atom_codes(Word, WordCodes), !,
     word_tokens(WordCodes, Tokens).
 word_tokens(WordCodes, Tokens) :-
     is_list(WordCodes),
@@ -46,17 +46,14 @@ word_tokens([Word|Words]) -->
 remove_matching(Goal, Title, CompressedTitle) :-
     atom(Title),
     word_tokens(Title, TitleWords),
-    remove_matching(Goal, TitleWords, CompressedTitleWords),
+    remove_matching(Goal, TitleWords, CompressedTitleWords), !,
     atomic_list_concat(CompressedTitleWords, ' ', CompressedTitle).
 remove_matching(_, [], []).
-remove_matching(Goal, [Word|TitleRest], [Word|Remaining]) :-
-    \+ (call(Goal, Article), string_lower(Word, Article)),
-    remove_matching(Goal, TitleRest, Remaining).
-remove_matching(Goal, [ArticleT|TitleRest], Remaining) :-
-    string_lower(ArticleT, Article),
-    call(Goal, Article),
-    remove_matching(Goal, TitleRest, Remaining).
-
+remove_matching(Goal, [Word|TitleRest], Result) :-
+    remove_matching(Goal, TitleRest, Remaining),
+    (\+ (call(Goal, Article), string_lower(Word, Article))
+     	-> (Result = [Word|Remaining])
+     	;  (Result = Remaining)).
 
 % support for remove_articles
 article(a). article(an).
@@ -67,7 +64,7 @@ article(the).
 %   True if Title contains articles (a, an, the) and CompressedTitle
 %   is Title without the articles.
 remove_articles(Title, CompressedTitle) :-
-    remove_matching(article, Title, CompressedTitle).
+    once(remove_matching(article, Title, CompressedTitle)).
 
 % support for remove_grammatical_words
 grammar(and).	grammar(from).	grammar(onto).
@@ -105,12 +102,12 @@ take_initials([Word|Words], [Initial|Initials]) :-
 take_prefixes(Title, TargetLength, Prefixes) :-
     atom(Title),
     word_tokens(Title, TitleWords),
-    take_prefixes(TitleWords, TargetLength, PrefixWords),
+    take_prefixes(TitleWords, TargetLength, PrefixWords), !,
     atomic_list_concat(PrefixWords, Prefixes).
 take_prefixes(TitleList, TargetLength, Prefixes) :-
     length(TitleList, N),
     PerWord is ceil(TargetLength / N),
-    take_prefixes(TitleList, TargetLength, PerWord, Prefixes).
+    once(take_prefixes(TitleList, TargetLength, PerWord, Prefixes)).
 take_prefixes([], _, _, []).
 take_prefixes(_, Target, _, []) :- Target =< 0.
 take_prefixes([Word|Title], Target, PerWord, [Next|Prefixes]) :-
@@ -130,30 +127,36 @@ suggest_identifier(Title, SuggestedIdentifier) :- fail.
 
 :- begin_tests(word_tokens).
 
-test(wt_theend) :- word_tokens('This is the End', [this,is,the,end]).
-test(wt_hhiker) :- word_tokens('The Hitchhiker''s Guide to the Galaxy', [the,'hitchhiker''s',guide,to,the,galaxy]).
+test(wt_theend) :-
+    word_tokens('This is the End', ['This',is,the,'End']).
+test(wt_hhiker) :-
+    word_tokens('The Hitchhiker''s Guide to the Galaxy', ['The','Hitchhiker''s','Guide',to,the,'Galaxy']).
 
 :- end_tests(word_tokens).
 
 :- begin_tests(remove_whitespace).
 
-test(whitespace1) :- remove_whitespace('This is the End', 'ThisistheEnd').
-test(whitespace2) :- remove_whitespace('This    is\t the End\n\n', 'ThisistheEnd').
+test(rw_theend) :-
+    remove_whitespace('This is the End', 'ThisistheEnd').
+test(rw_theend2) :-
+    remove_whitespace('This    is\t the End\n\n', 'ThisistheEnd').
 
 :- end_tests(remove_whitespace).
 
 :- begin_tests(remove_articles).
 
-test(the) :- remove_articles('This is the End', 'This is End').
-test(an)  :- remove_articles('An Anthology', 'Anthology').
-test(a)   :- remove_articles('A Christmas Story', 'Christmas Story').
+test(ra_the) :- remove_articles('This is the End', 'This is End').
+test(ra_an)  :- remove_articles('An Anthology', 'Anthology').
+test(ra_a)   :- remove_articles('A Christmas Story', 'Christmas Story').
 
 :- end_tests(remove_articles).
 
 :- begin_tests(remove_grammatical_words).
 
-test(to) :- remove_grammatical_words('The Hitchhiker''s Guide to the Galaxy', 'Hitchhiker''s Guide Galaxy').
-test(startwar) :- remove_grammatical_words('The start of a war', 'start war').
+test(rgw_to) :-
+    remove_grammatical_words('The Hitchhiker''s Guide to the Galaxy', 'Hitchhiker''s Guide Galaxy').
+test(rgw_startwar) :-
+    remove_grammatical_words('The start of a war', 'start war').
 
 :- end_tests(remove_grammatical_words).
 
