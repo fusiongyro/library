@@ -23,3 +23,11 @@ insert_books(Books) :-
 
 insert_book(Statement, book(Title, Author, ISBN)) :-
     odbc_execute(Statement, [Title, Author, ISBN]).
+
+select_books(book(Id, Title, Author, ISBN, DDC)) :-
+    odbc_query(
+	    library,
+	    'SELECT id, title, author, isbn, ddc FROM books',
+	    row(Id, Title, Author, ISBN, DDC),
+	    [null(null)]).
+    
