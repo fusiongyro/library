@@ -105,6 +105,7 @@ take_prefixes(Title, TargetLength, Prefixes) :-
     take_prefixes(TitleWords, TargetLength, PrefixWords), !,
     atomic_list_concat(PrefixWords, Prefixes).
 take_prefixes(TitleList, TargetLength, Prefixes) :-
+    is_list(TitleList),
     length(TitleList, N),
     PerWord is ceil(TargetLength / N),
     once(take_prefixes(TitleList, TargetLength, PerWord, Prefixes)).
