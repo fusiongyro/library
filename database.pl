@@ -1,4 +1,4 @@
-:- module(database, [insert_books/1]).
+:- module(database, [insert_books/1, find_book/1, select_books/1]).
 
 :- use_module(library(odbc)).
 
@@ -31,3 +31,12 @@ select_books(book(Id, Title, Author, ISBN, DDC)) :-
 	    row(Id, Title, Author, ISBN, DDC),
 	    [null(null)]).
     
+find_book(book(Id, Title, Author, ISBN, DDC)) :-
+    nonvar(Id),
+    odbc_prepare(
+	    library,
+	    'SELECT title, author, isbn, ddc FROM books WHERE id = ?',
+	    [varchar],
+	    Statement,
+	    [null(null)]),
+    odbc_execute(Statement, [Id], row(Title, Author, ISBN, DDC)).
